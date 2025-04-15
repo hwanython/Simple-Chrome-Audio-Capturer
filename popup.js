@@ -2,21 +2,102 @@ let recorder;
 let audioChunks = [];
 let audioContext;
 let capturedStream;
+let timerInterval;
+let recordingSeconds = 0;
 
-document.getElementById('startBtn').addEventListener('click', () => {
-  document.getElementById('status').textContent = '녹음 중...';
-  startCapture();
-});
-
-document.getElementById('stopBtn').addEventListener('click', () => {
-  document.getElementById('status').textContent = '녹음 중지 중...';
-  stopCapture();
+document.addEventListener('DOMContentLoaded', function() {
+  // 기본 UI 요소
+  const startBtn = document.getElementById('startBtn');
+  const stopBtn = document.getElementById('stopBtn');
+  const status = document.getElementById('status');
+  const statusIcon = document.getElementById('statusIcon');
+  const timer = document.getElementById('timer');
+  
+  // 향후 확장을 위한 UI 요소
+  const settingsToggle = document.getElementById('settingsToggle');
+  const settingsSection = document.getElementById('settingsSection');
+  
+  // 설정 토글 기능
+  settingsToggle.addEventListener('click', () => {
+    settingsSection.style.display = settingsSection.style.display === 'block' ? 'none' : 'block';
+    settingsToggle.classList.toggle('active');
+  });
+  
+  // 녹음 시작 버튼 이벤트
+  startBtn.addEventListener('click', () => {
+    updateStatus('녹음 중...', 'recording');
+    startCapture();
+  });
+  
+  // 녹음 중지 버튼 이벤트
+  stopBtn.addEventListener('click', () => {
+    updateStatus('녹음 중지 중...', 'stopping');
+    stopCapture();
+  });
+  
+  // 상태 업데이트 함수
+  function updateStatus(message, state) {
+    status.textContent = message;
+    
+    // 상태에 따른 아이콘 및 스타일 변경
+    statusIcon.className = 'status-icon';
+    
+    switch(state) {
+      case 'idle':
+        statusIcon.innerHTML = '<i class="fas fa-info-circle"></i>';
+        break;
+      case 'recording':
+        statusIcon.innerHTML = '<span class="loading"></span>';
+        status.classList.add('status-warning');
+        // 타이머 표시 (향후 확장)
+        timer.style.display = 'block';
+        startTimer();
+        break;
+      case 'stopping':
+        statusIcon.innerHTML = '<span class="loading"></span>';
+        status.classList.remove('status-warning');
+        break;
+      case 'success':
+        statusIcon.innerHTML = '<i class="fas fa-check-circle status-success"></i>';
+        status.classList.add('status-success');
+        setTimeout(() => {
+          status.classList.remove('status-success');
+        }, 3000);
+        break;
+      case 'error':
+        statusIcon.innerHTML = '<i class="fas fa-exclamation-circle status-error"></i>';
+        status.classList.add('status-error');
+        break;
+    }
+  }
+  
+  // 타이머 기능 (향후 확장)
+  function startTimer() {
+    recordingSeconds = 0;
+    updateTimerDisplay();
+    timerInterval = setInterval(updateTimerDisplay, 1000);
+  }
+  
+  function stopTimer() {
+    clearInterval(timerInterval);
+    timer.style.display = 'none';
+  }
+  
+  function updateTimerDisplay() {
+    recordingSeconds++;
+    const minutes = Math.floor(recordingSeconds / 60);
+    const seconds = recordingSeconds % 60;
+    timer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }
+  
+  // 초기 상태 설정
+  updateStatus('녹음 버튼을 클릭하여 시작하세요', 'idle');
 });
 
 function startCapture() {
   chrome.tabCapture.capture({ audio: true, video: false }, (stream) => {
     if (!stream) {
-      document.getElementById('status').textContent = '오디오 캡처에 실패했습니다.';
+      updateStatus('오디오 캡처에 실패했습니다.', 'error');
       return;
     }
 
@@ -49,13 +130,14 @@ function startCapture() {
         document.body.appendChild(a);
         a.click();
         URL.revokeObjectURL(url);
-        document.getElementById('status').textContent = '녹음이 중지되었으며 WAV 파일이 다운로드되었습니다.';
+        updateStatus('녹음이 완료되었으며 WAV 파일이 다운로드되었습니다.', 'success');
       }).catch(error => {
         console.error('WAV 변환 실패:', error);
-        document.getElementById('status').textContent = 'WAV 변환 실패: ' + error.message;
+        updateStatus('WAV 변환 실패: ' + error.message, 'error');
       });
       
       audioChunks = [];
+      stopTimer();
     };
 
     recorder.start();
@@ -165,5 +247,43 @@ function stopCapture() {
     // 버튼 상태 복원
     document.getElementById('startBtn').disabled = false;
     document.getElementById('stopBtn').disabled = true;
+  }
+}
+
+// 상태 업데이트 함수 (전역 스코프에서도 사용 가능하도록)
+function updateStatus(message, state) {
+  const status = document.getElementById('status');
+  const statusIcon = document.getElementById('statusIcon');
+  
+  if (!status || !statusIcon) return;
+  
+  status.textContent = message;
+  
+  // 상태에 따른 아이콘 및 스타일 변경
+  statusIcon.className = 'status-icon';
+  
+  switch(state) {
+    case 'idle':
+      statusIcon.innerHTML = '<i class="fas fa-info-circle"></i>';
+      break;
+    case 'recording':
+      statusIcon.innerHTML = '<span class="loading"></span>';
+      status.classList.add('status-warning');
+      break;
+    case 'stopping':
+      statusIcon.innerHTML = '<span class="loading"></span>';
+      status.classList.remove('status-warning');
+      break;
+    case 'success':
+      statusIcon.innerHTML = '<i class="fas fa-check-circle status-success"></i>';
+      status.classList.add('status-success');
+      setTimeout(() => {
+        status.classList.remove('status-success');
+      }, 3000);
+      break;
+    case 'error':
+      statusIcon.innerHTML = '<i class="fas fa-exclamation-circle status-error"></i>';
+      status.classList.add('status-error');
+      break;
   }
 }

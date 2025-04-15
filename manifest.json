@@ -5,10 +5,19 @@
     "description": "Chrome 탭의 오디오를 캡처하여 다운로드하는 간단한 확장 프로그램입니다.",
     "action": {
       "default_popup": "popup.html",
-      "default_title": "Audio Capturer"
+      "default_title": "Audio Capturer",
+      "default_icon": {
+        "16": "images/icon16.png",
+        "48": "images/icon48.png",
+        "128": "images/icon128.png"
+      }
     },
     "permissions": [
       "tabCapture"
-    ]
+    ],
+    "icons": {
+      "16": "images/icon16.png",
+      "48": "images/icon48.png",
+      "128": "images/icon128.png"
+    }
   }
-  
