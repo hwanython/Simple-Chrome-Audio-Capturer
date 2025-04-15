@@ -1,0 +1,14 @@
+{
+    "manifest_version": 3,
+    "name": "Simple Audio Capturer",
+    "version": "1.0",
+    "description": "Chrome 탭의 오디오를 캡처하여 다운로드하는 간단한 확장 프로그램입니다.",
+    "action": {
+      "default_popup": "popup.html",
+      "default_title": "Audio Capturer"
+    },
+    "permissions": [
+      "tabCapture"
+    ]
+  }
+  
