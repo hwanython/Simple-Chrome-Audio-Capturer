@@ -137,7 +137,7 @@ function startCapture() {
       });
       
       audioChunks = [];
-      stopTimer();
+      // stopTimer(); 
     };
 
     recorder.start();
