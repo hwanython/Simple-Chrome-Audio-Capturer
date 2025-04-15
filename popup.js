@@ -1,5 +1,7 @@
 let recorder;
 let audioChunks = [];
+let audioContext;
+let capturedStream;
 
 document.getElementById('startBtn').addEventListener('click', () => {
   document.getElementById('status').textContent = '녹음 중...';
@@ -18,6 +20,14 @@ function startCapture() {
       return;
     }
 
+    capturedStream = stream;
+    
+    // 오디오 컨텍스트 생성 및 스트림을 스피커로 연결
+    audioContext = new AudioContext();
+    const source = audioContext.createMediaStreamSource(stream);
+    source.connect(audioContext.destination);
+    
+    // 녹음기 설정
     recorder = new MediaRecorder(stream);
 
     recorder.ondataavailable = (event) => {
@@ -51,6 +61,22 @@ function startCapture() {
 function stopCapture() {
   if (recorder && recorder.state === 'recording') {
     recorder.stop();
+    
+    // 스트림 트랙 중지
+    if (capturedStream) {
+      capturedStream.getTracks().forEach(track => track.stop());
+      capturedStream = null;
+    }
+    
+    // 오디오 컨텍스트 닫기
+    if (audioContext) {
+      audioContext.close().then(() => {
+        audioContext = null;
+      }).catch(error => {
+        console.error('오디오 컨텍스트 닫기 실패:', error);
+      });
+    }
+    
     // 버튼 상태 복원
     document.getElementById('startBtn').disabled = false;
     document.getElementById('stopBtn').disabled = true;
